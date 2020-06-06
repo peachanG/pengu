@@ -1,8 +1,9 @@
 name: Upload Python Package
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   publish_test_pypi:
@@ -15,26 +16,28 @@ jobs:
         python-version: '3.7'
     - name: Get the version
       id: get_version
-      run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+      run: |
+        echo ::set-output name=TAG_VERSION::${GITHUB_REF#refs/tags/}
+        echo ::set-output name=PACKAGE_VERSION::$(cat pyproject.toml | grep "^version =" | tr -d "version = \"")
     - name: Check version
       run: |
-        PACKAGE_VERSION=$$(cat pyproject.toml| grep "^version =" | tr -d "version = \""); \
         echo "v${PACKAGE_VERSION}" && \
-        echo "${VERSION}" && \
-        test "v${PACKAGE_VERSION}" = "${VERSION}"
+        echo "${TAG_VERSION}" && \
+        test "v${PACKAGE_VERSION}" = "${TAG_VERSION}"
       env:
-        VERSION: ${{ steps.get_version.outputs.VERSION }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+        TAG_VERSION: ${{ steps.get_version.outputs.TAG_VERSION }}
+        PACKAGE_VERSION: ${{ steps.get_version.outputs.PACKAGE_VERSION }}
+    - name: Install Poetry
+      uses: dschep/install-poetry-action@v1.2
     - name: Publish testpypi
       run: |
         poetry config repositories.testpypi https://test.pypi.org/legacy/
         poetry config pypi-token.testpypi ${{ secrets.TESTPYPI_API_TOKEN }}
         poetry publish -r testpypi --build
+
   test_tetstpypi_37:
     runs-on: ubuntu-16.04
+    needs: publish_test_pypi
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
@@ -53,6 +56,7 @@ jobs:
 
   test_tetstpypi_38:
     runs-on: ubuntu-16.04
+    needs: publish_test_pypi
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python
@@ -68,3 +72,19 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+
+  publish_pypi:
+    runs-on: ubuntu-16.04
+    needs: [publish_test_pypi, test_tetstpypi_37, test_tetstpypi_38]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+    - name: Install Poetry
+      uses: dschep/install-poetry-action@v1.2
+    - name: Publish pypi
+      run: |
+        poetry config pypi-token.pypi ${{ secrets.PYPI_API_TOKEN }}
+        poetry publish --build
