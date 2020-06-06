@@ -1,4 +1,4 @@
-name: Lint
+name: Test
 
 on:
   push:
@@ -10,7 +10,7 @@ jobs:
   test:
     runs-on: ubuntu-16.04
     strategy:
-      max-parallel: 4
+      max-parallel: 2
       matrix:
         python-version: [3.7, 3.8]
 
