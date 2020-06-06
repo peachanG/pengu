@@ -5,7 +5,7 @@ description = "Pengu: a Library for Deep Learning in Computer Vision"
 authors = ["peachanG <kenkman0427@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "3.7.6"
+python = "^3.7.6"
 tensorflow = "2.2.0"
 pytest = {version = "^5.4.3", optional = true, extras = ["test"]}
 pytest-cov = {version = "^2.9.0", optional = true, extras = ["test"]}
