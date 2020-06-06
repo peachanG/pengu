@@ -1,0 +1,7 @@
+.secret
+.vscode
+.env
+.mypy_cache
+.coverage
+
+*.pyc
