@@ -4,7 +4,17 @@ on:
   push:
     branches:
     - master
+    paths:
+    - pengu
+    - tests
+    - pyproject.toml
+    - poetry.lock
   pull_request:
+    paths:
+    - pengu
+    - tests
+    - pyproject.toml
+    - poetry.lock
 
 jobs:
   test:
@@ -27,9 +37,10 @@ jobs:
     - name: TypeCheck with mypy
       run: |
         mypy --config-file .mypy.ini pengu
+        mypy --config-file .mypy.ini tests
     - name: Lint with flake8
       run: |
-        flake8 pengu
+        flake8 pengu tests
     - name: Test with pytest
       run: |
         pytest
