@@ -1,8 +1,13 @@
 [tool.poetry]
 name = "pengu"
 version = "0.1.0"
-description = "Pengu: a Library for Deep Learning in Computer Vision"
+description = "WIP"
 authors = ["peachanG <kenkman0427@gmail.com>"]
+homepage = "https://github.com/peachanG"
+repository = "https://github.com/peachanG/pengu"
+documentation = "https://peachang.github.io/pengu/"
+readme = "README.md"
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.7.6"
