@@ -70,7 +70,8 @@ class ImagesDataCSV(object):
         train_val_labels = train_val_df[self.LABEL_COL]
         test_size = val_ratio / (train_ratio + val_ratio)
         train_df, val_df, _, _ = train_test_split(
-            train_val_df, train_val_labels, test_size=test_size, random_state=0, stratify=train_val_labels
+            train_val_df, train_val_labels,
+            test_size=test_size, random_state=0, stratify=train_val_labels
         )
         return train_df, val_df, test_df
 

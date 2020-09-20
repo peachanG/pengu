@@ -9,7 +9,6 @@ from PIL import Image
 
 from pengu.crawler import ImagesDataCSV
 from pengu.dataset.utils import _int64_feature, _bytes_feature
-from pengu.utils.file_io import save_json
 
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE

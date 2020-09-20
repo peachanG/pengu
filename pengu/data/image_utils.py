@@ -1,7 +1,7 @@
 import os
 import io
 import glob
-from typing import List, Tuple, Optional, Union, Callable
+from typing import List, Tuple, Optional, Union
 
 import cv2
 import numpy as np

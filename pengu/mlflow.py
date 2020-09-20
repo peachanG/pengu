@@ -3,7 +3,6 @@ from dataclasses import dataclass, asdict
 from typing import Any, Optional
 
 import tensorflow as tf
-import mlflow
 from mlflow.tracking.client import MlflowClient
 
 from pengu.utils.file_io import YamlConfig
