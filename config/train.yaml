@@ -1,0 +1,27 @@
+train:
+  input_preprocessed_data:
+    run_id: df282b883abf4fa2aabce76be08f0696
+    train_path: train.tfrec
+    val_path: val.tfrec
+    test_path: test.tfrec
+    label2index_path: label2index.yaml
+  preprocess:
+    rescale_scale: "1./127.5"
+    rescale_offset: -1.0
+    img_size: [224, 224]
+  augment:
+    RandomFlip:
+      mode: horizontal
+    RandomRotation:
+      factor: 0.2
+  model:
+    name: mobilenet_v2
+    params:
+      weights: imagenet
+  optimizer:
+    name: Adam
+    params:
+      learning_rate: 0.001
+mlflow:
+  experiment_name: train
+  tracking_uri: http://localhost:5001
