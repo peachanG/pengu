@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pengu"
-version = "0.0.1"
+version = "0.1.0"
 description = "WIP"
 authors = ["peachanG <kenkman0427@gmail.com>"]
 homepage = "https://github.com/peachanG"
