@@ -3,90 +3,59 @@ import re
 import io
 from pathlib import Path
 from six.moves.urllib.parse import urlparse
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List
 
-import pandas as pd
 from PIL import Image
 from bs4 import BeautifulSoup
 from icrawler.builtin.google import GoogleParser
 from icrawler import ImageDownloader
-from sklearn.model_selection import train_test_split
 
 from pengu.data.image_utils import get_image_meta
+from pengu.core.csv_core import ImagesDataCSV, ImageUrlCSV
 
 
-class ImagesDataCSV(object):
-    DELIMITER = ","
-    URL_COL: str = "url"
-    FILE_PATH_COL: str = "file_path"
-    LABEL_COL: str = "label"
-    IMG_W_COL: str = "img_w"
-    IMG_H_COL: str = "img_h"
-    MODE_COL: str = "mode"
-    HASH_COL: str = "hash"
-    FORMAT_COL: str = "format"
-    HEADER: List[str] = [URL_COL, FILE_PATH_COL, LABEL_COL,
-                         IMG_W_COL, IMG_H_COL, MODE_COL,
-                         HASH_COL, FORMAT_COL]
-
-    def __init__(self, csv_path: Path):
-        self.csv_path = csv_path
-
-    @classmethod
-    def write_header(cls, csv_path: Path):
+class SaveUrlNotDownloadDownloader(ImageDownloader):
+    def __init__(self, thread_num, signal, session, storage,
+                 csv_path: Path,
+                 label: str):
+        """"""
+        super(SaveUrlNotDownloadDownloader, self).__init__(
+            thread_num, signal, session, storage)
         csv_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(csv_path, 'w', newline='') as f:
-            f.write(cls.DELIMITER.join(cls.HEADER) + "\n")
+        self.csv = ImageUrlCSV(csv_path=csv_path)
+        self.label = label
 
-    def write_row(self,
-                  url: str,
-                  file_path: str,
-                  label: str,
-                  img_w: str,
-                  img_h: str,
-                  mode: str,
-                  hash: str,
-                  format: str):
-        row: List[str] = [url, file_path, label, img_w, img_h, mode, hash, format]
-        with open(self.csv_path, 'a', newline='') as f:
-            f.write(self.DELIMITER.join(row) + "\n")
+    def download(self,
+                 task,
+                 default_ext,
+                 timeout=5,
+                 max_retry=3,
+                 overwrite=False,
+                 **kwargs):
+        """Not download and write [url, label] (in self.process_meta).
+        Override icrawler.downloader.Downloader.download method.
+        """
+        task['success'] = True
 
-    def drop_duplicates_hash(self) -> None:
-        df = pd.read_csv(self.csv_path)
-        df = df.drop_duplicates(subset=[self.HASH_COL], keep="first")
-        self.df = df
-
-    def split_train_val_test(
-            self,
-            ratio: Tuple[float, float, float]) -> Tuple[pd.DataFrame,
-                                                        pd.DataFrame,
-                                                        pd.DataFrame]:
-        train_ratio, val_ratio, test_ratio = ratio
-        df = self.df[[self.FILE_PATH_COL, self.LABEL_COL]]
-        labels = df[self.LABEL_COL]
-        train_val_df, test_df, _, _ = train_test_split(
-            df, labels, test_size=test_ratio, random_state=0, stratify=labels
-        )
-        train_val_labels = train_val_df[self.LABEL_COL]
-        test_size = val_ratio / (train_ratio + val_ratio)
-        train_df, val_df, _, _ = train_test_split(
-            train_val_df, train_val_labels,
-            test_size=test_size, random_state=0, stratify=train_val_labels
-        )
-        return train_df, val_df, test_df
+    def process_meta(self, task: Dict[str, Any]):
+        if task.get("success"):
+            _url = task.get("file_url", "")
+            url: str = _url if isinstance(_url, str) else ""
+            row: List[str] = [url, self.label]
+            self.csv.write_row(row)
 
 
 class SaveResultImageDownloader(ImageDownloader):
     def __init__(self, thread_num, signal, session, storage,
-                 image_data_csv_path: Path,
+                 csv_path: Path,
                  label: str,
                  image_exts: List[str] = ["jpeg", "jpg", "png"]):
         """Init Parser with some shared variables."""
         super(SaveResultImageDownloader, self).__init__(
             thread_num, signal, session, storage)
 
-        image_data_csv_path.parent.mkdir(parents=True, exist_ok=True)
-        self.image_data_csv = ImagesDataCSV(csv_path=image_data_csv_path)
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        self.csv = ImagesDataCSV(csv_path=csv_path)
         self.label = label
         self.image_exts = image_exts
 
@@ -104,10 +73,9 @@ class SaveResultImageDownloader(ImageDownloader):
             img_hash = task["img_hash"]
             img_format = task["img_format"]
 
-            self.image_data_csv.write_row(
-                url=url, file_path=file_path, label=self.label,
-                img_w=str(img_w), img_h=str(img_h), mode=img_mode,
-                hash=str(img_hash), format=img_format)
+            row: List[str] = [url, file_path, self.label, str(img_w),
+                              str(img_h), img_mode, str(img_hash), img_format]
+            self.csv.write_row(row)
 
     def keep_file(self, task, response, min_size=None, max_size=None):
         """Decide whether to keep the image & add hash
@@ -174,7 +142,8 @@ class FixedGoogleParser(GoogleParser):
             if 'ds:1' not in txt:
                 continue
             # https://github.com/hellock/icrawler/pull/74
-            txt = re.sub(r"^AF_initDataCallback\({.*key: 'ds:(\d)'.+data:(.+)}\);?$",
+            txt = re.sub(r"^AF_initDataCallback\({.*key: 'ds:(\d)'.+data:(.+), "
+                         r"sideChannel: {}}\);?$",
                          "\\2", txt, 0, re.DOTALL)
 
             meta = json.loads(txt)

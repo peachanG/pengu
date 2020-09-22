@@ -1,0 +1,100 @@
+crawler:
+  cmd: python pengu/main/crawler.py -csv data/crawler/url.csv
+  deps:
+  - path: pengu/main/crawler.py
+    md5: 72eb6b8cc6c8bd2e1cc8cd25c8003080
+  params:
+    params.yaml:
+      crawler.end_date:
+      - 2020
+      - 8
+      - 1
+      crawler.keywords:
+      - cat
+      - dog
+      - cute cat
+      - cute dog
+      crawler.labels:
+      - cat
+      - dog
+      - cat
+      - dog
+      crawler.max_num: 100
+      crawler.start_date:
+      - 2020
+      - 1
+      - 1
+  outs:
+  - path: data/crawler/url.csv
+    md5: e48f8fdeadc2e859690ba4144bda70f2
+download:
+  cmd: python pengu/main/download.py -url_csv data/crawler/url.csv -img_csv data/download/img_data.csv
+    -img_dir data/download/images
+  deps:
+  - path: data/crawler/url.csv
+    md5: e48f8fdeadc2e859690ba4144bda70f2
+  - path: pengu/main/download.py
+    md5: 162dec0a46ca2160f0cfb163c723f8cc
+  params:
+    params.yaml:
+      download.resize_max_size:
+      - 600
+      - 600
+  outs:
+  - path: data/download/images
+    md5: 4680e86f78c81ecee4b7cce2a2fa8df4.dir
+  - path: data/download/img_data.csv
+    md5: c6080e9f2014bbdb75e12e3318cf352f
+make_clf_dataset:
+  cmd: python pengu/main/make_clf_dataset.py -img_csv data/download/img_data.csv -p_csv
+    data/make_clf_dataset/processed_csv -tfrecord data/make_clf_dataset/tfrecord -l2i
+    data/make_clf_dataset/label2index.yaml
+  deps:
+  - path: data/download/images
+    md5: 4680e86f78c81ecee4b7cce2a2fa8df4.dir
+  - path: data/download/img_data.csv
+    md5: c6080e9f2014bbdb75e12e3318cf352f
+  - path: pengu/main/download.py
+    md5: 162dec0a46ca2160f0cfb163c723f8cc
+  params:
+    params.yaml:
+      make_clf_dataset.label2index:
+      make_clf_dataset.ratio:
+      - 0.7
+      - 0.15
+      - 0.15
+  outs:
+  - path: data/make_clf_dataset/label2index.yaml
+    md5: ddba730d28a85b7c65af74536527fb29
+  - path: data/make_clf_dataset/processed_csv
+    md5: 1c394d3c93dd0fe89a092d7f468784a3.dir
+  - path: data/make_clf_dataset/tfrecord
+    md5: 31e85016fb9fb9ec88824a897e016b16.dir
+train_clf:
+  cmd: python pengu/main/train_clf.py -tfrecord data/make_clf_dataset/tfrecord -l2i
+    data/make_clf_dataset/label2index.yaml -model data/train_clf/clf_model -t logs/clf_model
+  deps:
+  - path: data/make_clf_dataset/label2index.yaml
+    md5: ddba730d28a85b7c65af74536527fb29
+  - path: data/make_clf_dataset/tfrecord
+    md5: 31e85016fb9fb9ec88824a897e016b16.dir
+  - path: pengu/main/train_clf.py
+    md5: 163062c995c1794f77fcd2b5683c87cc
+  params:
+    params.yaml:
+      train_clf.augment.RandomFlip.mode: horizontal
+      train_clf.augment.RandomRotation.factor: 0.0
+      train_clf.model.base_model.name: mobilenet_v2
+      train_clf.model.top_model.dropout_rate: 0.2
+      train_clf.optimizer.name: Adam
+      train_clf.optimizer.params.learning_rate: 0.001
+      train_clf.preprocess.img_size:
+      - 224
+      - 224
+      train_clf.preprocess.rescale_offset: -1.0
+      train_clf.preprocess.rescale_scale: 1./127.5
+  outs:
+  - path: data/train_clf/clf_model
+    md5: afc2a821641198b5e5374b5d5ef4a70b.dir
+  - path: logs/clf_model
+    md5: 97f4fe41d8b73908c8d73bf747a1b631.dir

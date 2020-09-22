@@ -107,7 +107,7 @@ class YamlConfig:
             yaml.dump(convert_dict_for_pathlib(asdict(self)), f)
 
     @classmethod
-    def load(cls, config_path: Path):
+    def load(cls, config_path: Path, process_name: Optional[str] = None):
         """Load config from YAML file """
 
         def convert_from_dict(parent_cls, data):
@@ -127,6 +127,10 @@ class YamlConfig:
         with open(config_path) as f:
             config_data = yaml.full_load(f)
             # recursively convert config item to YamlConfig
-            config_data = convert_from_dict(cls, config_data)
+            if process_name is None:
+                config_data = convert_from_dict(cls, config_data)
+            else:
+                config_data = config_data[process_name]
+                config_data = convert_from_dict(cls, config_data)
 
         return cls(**config_data)  # type: ignore

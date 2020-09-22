@@ -1,0 +1,55 @@
+stages:
+  crawler:
+    cmd: python pengu/main/crawler.py -csv data/crawler/url.csv
+    deps:
+    - pengu/main/crawler.py
+    params:
+    - crawler.end_date
+    - crawler.keywords
+    - crawler.labels
+    - crawler.start_date
+    - crawler.max_num
+    outs:
+    - data/crawler/url.csv
+  download:
+    cmd: python pengu/main/download.py -url_csv data/crawler/url.csv -img_csv data/download/img_data.csv -img_dir data/download/images
+    deps:
+    - pengu/main/download.py
+    - data/crawler/url.csv
+    params:
+    - download.resize_max_size
+    outs:
+    - data/download/img_data.csv
+    - data/download/images
+  make_clf_dataset:
+    cmd: python pengu/main/make_clf_dataset.py -img_csv data/download/img_data.csv -p_csv data/make_clf_dataset/processed_csv -tfrecord data/make_clf_dataset/tfrecord -l2i data/make_clf_dataset/label2index.yaml
+    deps:
+    - pengu/main/download.py
+    - data/download/img_data.csv
+    - data/download/images
+    params:
+    - make_clf_dataset.ratio
+    - make_clf_dataset.label2index
+    outs:
+    - data/make_clf_dataset/processed_csv
+    - data/make_clf_dataset/tfrecord
+    - data/make_clf_dataset/label2index.yaml
+  train_clf:
+    cmd: python pengu/main/train_clf.py -tfrecord data/make_clf_dataset/tfrecord -l2i data/make_clf_dataset/label2index.yaml -model data/train_clf/clf_model -t logs/clf_model
+    deps:
+    - pengu/main/train_clf.py
+    - data/make_clf_dataset/tfrecord
+    - data/make_clf_dataset/label2index.yaml
+    params:
+    - train_clf.preprocess.rescale_scale
+    - train_clf.preprocess.rescale_offset
+    - train_clf.preprocess.img_size
+    - train_clf.augment.RandomFlip.mode
+    - train_clf.augment.RandomRotation.factor
+    - train_clf.optimizer.name
+    - train_clf.optimizer.params.learning_rate
+    - train_clf.model.base_model.name
+    - train_clf.model.top_model.dropout_rate
+    outs:
+    - data/train_clf/clf_model
+    - logs/clf_model
