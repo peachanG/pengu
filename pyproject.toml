@@ -19,7 +19,7 @@ imagehash = "^4.1.0"
 scikit-learn = "^0.23.2"
 matplotlib = "^3.3.0"
 tensorboard_plugin_profile = "^2.3.0"
-boto3 = "^1.14.38"
+pyyaml = "^5.3.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.3"
