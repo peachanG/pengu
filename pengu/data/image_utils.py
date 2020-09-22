@@ -1,20 +1,15 @@
 import os
-import io
 import glob
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Union
 
 import cv2
 import numpy as np
 import imagehash
-import requests
 import PIL
 from PIL import Image
-from requests.packages.urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
 from tensorflow.keras.preprocessing import image as keras_image
 
 from pengu.utils.function import alpha_numeric_sorted
-from pengu.exceptions import DownloadError
 
 
 def pil2cv(img: Image.Image) -> np.ndarray:
@@ -50,44 +45,6 @@ def cv2pil(img: np.ndarray) -> Image.Image:
         img_np = img_np[:, :, [2, 1, 0, 3]]
     img_pil = Image.fromarray(img_np)
     return img_pil
-
-
-def download_image(url: str,
-                   timeout: float = 1.0,
-                   retry_count: int = 3,
-                   retry_backoff_factor: float = 0.5) -> Image.Image:
-    """Download Image from image url
-
-    Args:
-        url (str): image url
-
-    Raises:
-        DownloadError
-
-    Returns:
-        Image.Image: PIL Image.
-    """
-    session = requests.Session()
-
-    retries = Retry(total=retry_count,
-                    backoff_factor=retry_backoff_factor)
-
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-
-    response = session.get(url, timeout=timeout)
-
-    try:
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        raise DownloadError(f"Failed to download Image. url: {url}") from e
-
-    try:
-        img = Image.open(io.BytesIO(response.content))
-    except OSError as e:
-        raise DownloadError(f"Failed to open image downloaded. url: {url}") from e
-
-    return img
 
 
 def load_image(file_path: str,
@@ -133,12 +90,12 @@ def list_pictures(dir_path: str,
     return picture_file_list
 
 
-def get_image_meta(data: Union[np.ndarray, Image.Image, str],
+def get_image_meta(data: Union[np.ndarray, Image.Image],
                    data_format: str,
                    hash_method: str) -> Tuple[Tuple[int, int],
-                                              Optional[str],
-                                              Optional[imagehash.ImageHash],
-                                              Optional[str]]:
+                                              str,
+                                              imagehash.ImageHash,
+                                              str]:
     """Get image meta data(size[w, h], mode, hash)
 
     Args:
@@ -150,21 +107,11 @@ def get_image_meta(data: Union[np.ndarray, Image.Image, str],
             support "phash" and "average", "dhash", "whash".
 
     Returns:
-        Tuple[Tuple[int, int], Optional[str], Optional[imagehash.ImageHash]]]:
+        Tuple[Tuple[int, int], str, imagehash.ImageHash, str]:
             (size[w, h], image_mode, hash, img_format).
             if DownloadError, ((0,0), None, None, None).
     """
-    if isinstance(data, str):
-        if data_format == 'url':
-            try:
-                img: Image.Image = download_image(data)
-            except DownloadError:
-                return (0, 0), None, None, None
-        elif data_format == 'file':
-            img = Image.open(data)
-        else:
-            raise ValueError(f"Invalid data: {data}, data_format: {data_format}")
-    elif type(data).__module__.startswith(PIL.__name__):
+    if type(data).__module__.startswith(PIL.__name__):
         if data_format == 'pil':
             img = data
         else:
@@ -192,3 +139,23 @@ def get_image_meta(data: Union[np.ndarray, Image.Image, str],
     img_hash = hash_func(img)
     img_format = img.format
     return img.size, img.mode, img_hash, img_format
+
+
+def resize_image(img: Image.Image,
+                 size: Tuple[int, int],
+                 resample: int = Image.BILINEAR,
+                 preserve_aspect_ratio: bool = False):
+    if preserve_aspect_ratio:
+        current_width, current_height = img.size
+
+        # do the computation to find the right scale and height/width.
+        scale_factor_width: float = size[0] / current_width
+        scale_factor_height: float = size[1] / current_height
+        scale_factor: float = min(scale_factor_height, scale_factor_width)
+        scaled_width_const: int = round(scale_factor * current_width)
+        scaled_height_const: int = round(scale_factor * current_height)
+
+        size = (scaled_width_const, scaled_height_const)
+
+    img = img.resize(size, resample=resample)
+    return img
