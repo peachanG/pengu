@@ -10,7 +10,6 @@ Work In Progress！
 
 # command
 ```
-$ mlflow server --backend-store-uri ./.mlflow_v2 --default-artifact-root s3://pengu-mlflow -p 5001
 $ tensorboard --logdir=./logs
 ```
 ```
