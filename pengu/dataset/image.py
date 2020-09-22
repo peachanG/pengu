@@ -63,14 +63,10 @@ class ImageTFRecord(object):
     @classmethod
     def _serialize_example(cls,
                            path: Path,
-                           label: int,
-                           img_size: Optional[Tuple[int, int]] = None) -> tf.train.Example:
+                           label: int) -> tf.train.Example:
         img = Image.open(str(path))
         if img.mode != "RGB":
             img = img.convert("RGB")
-
-        if img_size is not None:
-            img = img.resize((img_size[1], img_size[0]))
 
         _img_bytes = io.BytesIO()
         img.save(_img_bytes, format="JPEG")
@@ -106,12 +102,9 @@ class ImageTFRecord(object):
     @classmethod
     def write_tfrecord(cls,
                        df: pd.DataFrame,
-                       img_dst_path: Path,
                        tfrecord_path: Path,
-                       label2index: Optional[Dict[str, int]] = None,
-                       img_size: Optional[Tuple[int, int]] = None) -> Dict[str, int]:
+                       label2index: Optional[Dict[str, int]] = None) -> Dict[str, int]:
         image_paths = df[ImagesDataCSV.FILE_PATH_COL].to_list()
-        image_paths = [img_dst_path / path for path in image_paths]
         labels = df[ImagesDataCSV.LABEL_COL].to_list()
         if label2index is None:
             _label2index: Dict[str, int] = {label: i for i, label in enumerate(list(set(labels)))}
@@ -121,7 +114,7 @@ class ImageTFRecord(object):
         with tf.io.TFRecordWriter(str(tfrecord_path)) as writer:
             for path, label in zip(image_paths, labels):
                 label_i = _label2index[label]
-                tf_example = cls._serialize_example(path, label_i, img_size)
+                tf_example = cls._serialize_example(path, label_i)
                 writer.write(tf_example.SerializeToString())
         return _label2index
 
