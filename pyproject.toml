@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pengu"
-version = "0.1.1"
+version = "0.2.0"
 description = "WIP"
 authors = ["peachanG <kenkman0427@gmail.com>"]
 homepage = "https://github.com/peachanG"
@@ -14,8 +14,6 @@ python = "^3.7.6"
 tensorflow = "2.3.0"
 icrawler = "^0.6.3"
 mypy = "^0.782"
-mlflow = "^1.10.0"
-hydra = "^2.5"
 opencv-python = "4.2.0.34"
 imagehash = "^4.1.0"
 scikit-learn = "^0.23.2"
