@@ -7,7 +7,7 @@ import pandas as pd
 import tensorflow as tf
 from PIL import Image
 
-from pengu.crawler import ImagesDataCSV
+from pengu.data.crawler import ImagesDataCSV
 from pengu.dataset.utils import _int64_feature, _bytes_feature
 
 

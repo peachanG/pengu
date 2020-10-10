@@ -28,6 +28,7 @@ stages:
     - data/download/img_data.csv
     - data/download/images
     params:
+    - make_clf_dataset.use_random_under_sampling
     - make_clf_dataset.ratio
     - make_clf_dataset.label2index
     outs:

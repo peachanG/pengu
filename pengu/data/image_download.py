@@ -17,7 +17,7 @@ from requests.adapters import HTTPAdapter
 
 from pengu.core.csv_core import ImageDataRowItem, ImageUrlCSV, ImagesDataCSV
 from pengu.data.image_utils import get_image_meta, resize_image
-from pengu.exceptions import DownloadError
+from pengu.utils.exceptions import DownloadError
 
 
 def create_retry_session(retry_count: int = 3,
@@ -89,9 +89,20 @@ class ImageDownloadThread(threading.Thread):
         self.timeout = timeout
         self.resize_max_size = resize_max_size
 
+        self._killed = False
+
+    def kill(self):
+        self._killed = True
+
     def run(self):
         while True:
-            item: ImageDownloadThread.UrlItem = self.url_queue.get()
+            try:
+                item: ImageDownloadThread.UrlItem = self.url_queue.get_nowait()
+            except queue.Empty:
+                if self._killed:
+                    break
+                else:
+                    continue
 
             try:
                 img = download_image(item.url,
@@ -106,7 +117,7 @@ class ImageDownloadThread(threading.Thread):
                 continue
 
             (img_w, img_h), img_mode, img_hash, img_format \
-                = get_image_meta(img, data_format="pil", hash_method="phash")
+                = get_image_meta(img, hash_method="phash")
             resized_img = resize_image(img, size=self.resize_max_size, preserve_aspect_ratio=True)
             if resized_img.mode != "RGB":
                 resized_img = resized_img.convert("RGB")
@@ -143,6 +154,9 @@ class ImageDownloader:
         self._url_queue: Queue[ImageDownloadThread.UrlItem] = Queue()
         self._result_queue: Queue[ImageDataRowItem] = Queue()
 
+        # https://stackoverflow.com/questions/36741004/how-to-disable-urllib3-retrying-warning-messages
+        logging.getLogger("urllib3").setLevel(logging.ERROR)
+
     def _init_workers(self):
         self._workers = []
         for i in range(self._n_workers):
@@ -162,6 +176,7 @@ class ImageDownloader:
 
     def _terminate(self):
         for worker in self._workers:
+            worker.kill()
             worker.join()
             logging.info(f"Terminate {worker.name} thread")
 

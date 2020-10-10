@@ -1,68 +1,11 @@
 import os
 import glob
-from typing import List, Tuple, Union
+from typing import List, Tuple
 
-import cv2
-import numpy as np
 import imagehash
-import PIL
 from PIL import Image
-from tensorflow.keras.preprocessing import image as keras_image
 
 from pengu.utils.function import alpha_numeric_sorted
-
-
-def pil2cv(img: Image.Image) -> np.ndarray:
-    """Convert PIL.Image.Image to np.ndarray(opencv)
-    Args:
-        img (Image.Image): PIL image
-    Returns:
-        np.ndarray: converted image array (opencv)
-    """
-    img_np = np.array(img, dtype=np.uint8)
-    if img_np.ndim == 2:  # L
-        pass
-    elif img_np.shape[2] == 3:  # RGB
-        img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
-    elif img_np.shape[2] == 4:  # RGBA
-        img_np = cv2.cvtColor(img_np, cv2.COLOR_RGBA2BGRA)
-    return img_np
-
-
-def cv2pil(img: np.ndarray) -> Image.Image:
-    """Convert np.ndarray(opencv) to PIL.Image.Image
-    Args:
-        img (np.ndarray): OpenCV image array
-    Returns:
-        Image.Image: PIL image
-    """
-    img_np = img.copy()
-    if img_np.ndim == 2:  # L
-        pass
-    elif img_np.shape[2] == 3:  # RGB
-        img_np = img_np[:, :, ::-1]
-    elif img_np.shape[2] == 4:  # RGBA
-        img_np = img_np[:, :, [2, 1, 0, 3]]
-    img_pil = Image.fromarray(img_np)
-    return img_pil
-
-
-def load_image(file_path: str,
-               target_size: Tuple[int, int]) -> np.ndarray:
-    """load image from file path.
-
-    Args:
-        file_path_list (List[str]): Image file path list.
-        target_size (Tuple[int, int]): Size when load image.
-
-    Returns:
-        np.ndarray: Preprocessed and resized image array. Shape is (h, w, ch)
-
-    """
-    img = keras_image.load_img(file_path, target_size=target_size)
-    img = np.asarray(img)
-
-    return img
 
 
 def list_pictures(dir_path: str,
@@ -90,8 +33,7 @@ def list_pictures(dir_path: str,
     return picture_file_list
 
 
-def get_image_meta(data: Union[np.ndarray, Image.Image],
-                   data_format: str,
+def get_image_meta(img: Image.Image,
                    hash_method: str) -> Tuple[Tuple[int, int],
                                               str,
                                               imagehash.ImageHash,
@@ -99,7 +41,7 @@ def get_image_meta(data: Union[np.ndarray, Image.Image],
     """Get image meta data(size[w, h], mode, hash)
 
     Args:
-        data (Union[np.ndarray, Image.Image, str]):
+        data (Image.Image):
             image data. support data_format data.
         data_format (str):
             support "url" and "file"(path), "pil", "opencv".
@@ -111,20 +53,6 @@ def get_image_meta(data: Union[np.ndarray, Image.Image],
             (size[w, h], image_mode, hash, img_format).
             if DownloadError, ((0,0), None, None, None).
     """
-    if type(data).__module__.startswith(PIL.__name__):
-        if data_format == 'pil':
-            img = data
-        else:
-            raise ValueError(f"Invalid data. data_format: {data_format}")
-    elif type(data).__module__.startswith(np.__name__):
-        if data_format == 'opencv':
-            img = cv2pil(data)
-        else:
-            raise ValueError(f"Invalid data. data_format: {data_format}")
-    else:
-        raise ValueError("Invalid data. data_type: "
-                         f"{type(data).__module__}, data_format: {data_format}")
-
     if hash_method == "phash":
         hash_func = imagehash.phash
     elif hash_method == "average":

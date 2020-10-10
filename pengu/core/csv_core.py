@@ -1,4 +1,5 @@
 import abc
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Generator
@@ -64,9 +65,16 @@ class ImagesDataCSV(BaseCSV):
         super(ImagesDataCSV, self).__init__(csv_path=csv_path)
 
     @classmethod
-    def create_df_dropped_hash_duplicates(cls, csv_path: Path) -> pd.DataFrame:
+    def create_df_with_duplicate_hashes_removed(cls, csv_path: Path) -> pd.DataFrame:
         df = pd.read_csv(csv_path)
+        before_duplicates_counts: pd.Series = df.value_counts(cls.LABEL_COL)
+        logging.info("Counts before dropping row with duplicate hashes!")
+        logging.info(before_duplicates_counts)
+
         df = df.drop_duplicates(subset=[cls.HASH_COL], keep="first")
+        after_duplicates_counts: pd.Series = df.value_counts(cls.LABEL_COL)
+        logging.info("Counts after dropping row with duplicate hashes!")
+        logging.info(after_duplicates_counts)
         return df
 
     @classmethod

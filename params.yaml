@@ -7,6 +7,7 @@ crawler:
 download:
   resize_max_size: [600, 600]
 make_clf_dataset:
+  use_random_under_sampling: true
   ratio: [0.7, 0.15, 0.15]
   label2index: null
 train_clf:
