@@ -17,7 +17,7 @@ from requests.adapters import HTTPAdapter
 
 from pengu.core.csv_core import ImageDataRowItem, ImageUrlCSV, ImagesDataCSV
 from pengu.data.image_utils import get_image_meta, resize_image
-from pengu.exceptions import DownloadError
+from pengu.utils.exceptions import DownloadError
 
 
 def create_retry_session(retry_count: int = 3,
@@ -89,9 +89,20 @@ class ImageDownloadThread(threading.Thread):
         self.timeout = timeout
         self.resize_max_size = resize_max_size
 
+        self._killed = False
+
+    def kill(self):
+        self._killed = True
+
     def run(self):
         while True:
-            item: ImageDownloadThread.UrlItem = self.url_queue.get()
+            try:
+                item: ImageDownloadThread.UrlItem = self.url_queue.get_nowait()
+            except queue.Empty:
+                if self._killed:
+                    break
+                else:
+                    continue
 
             try:
                 img = download_image(item.url,
@@ -162,6 +173,7 @@ class ImageDownloader:
 
     def _terminate(self):
         for worker in self._workers:
+            worker.kill()
             worker.join()
             logging.info(f"Terminate {worker.name} thread")
 
