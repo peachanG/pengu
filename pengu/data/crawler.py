@@ -1,36 +1,44 @@
 import json
 import re
 import io
+from urllib.parse import urlparse
 from pathlib import Path
-from six.moves.urllib.parse import urlparse
 from typing import Dict, Any, List
 
 from PIL import Image
 from bs4 import BeautifulSoup
+from requests import Response
 from icrawler.builtin.google import GoogleParser
+from icrawler.utils import Signal, Session
+from icrawler.storage import BaseStorage
 from icrawler import ImageDownloader
 
 from pengu.data.image_utils import get_image_meta
 from pengu.core.csv_core import ImagesDataCSV, ImageUrlCSV
 
 
-class SaveUrlNotDownloadDownloader(ImageDownloader):
-    def __init__(self, thread_num, signal, session, storage,
+class UrlCSVWriter(ImageDownloader):
+    """Not download and write [url, label]
+    """
+    def __init__(self,
+                 thread_num: int,
+                 signal: Signal,
+                 session: Session,
+                 storage: BaseStorage,
                  csv_path: Path,
                  label: str):
-        """"""
-        super(SaveUrlNotDownloadDownloader, self).__init__(
+        super(UrlCSVWriter, self).__init__(
             thread_num, signal, session, storage)
         csv_path.parent.mkdir(parents=True, exist_ok=True)
         self.csv = ImageUrlCSV(csv_path=csv_path)
         self.label = label
 
     def download(self,
-                 task,
-                 default_ext,
-                 timeout=5,
-                 max_retry=3,
-                 overwrite=False,
+                 task: Dict[str, Any],
+                 default_ext: str,
+                 timeout: int = 5,
+                 max_retry: int = 3,
+                 overwrite: bool = False,
                  **kwargs):
         """Not download and write [url, label] (in self.process_meta).
         Override icrawler.downloader.Downloader.download method.
@@ -46,7 +54,11 @@ class SaveUrlNotDownloadDownloader(ImageDownloader):
 
 
 class SaveResultImageDownloader(ImageDownloader):
-    def __init__(self, thread_num, signal, session, storage,
+    def __init__(self,
+                 thread_num: int,
+                 signal: Signal,
+                 session: Session,
+                 storage: BaseStorage,
                  csv_path: Path,
                  label: str,
                  image_exts: List[str] = ["jpeg", "jpg", "png"]):
@@ -77,7 +89,10 @@ class SaveResultImageDownloader(ImageDownloader):
                               str(img_h), img_mode, str(img_hash), img_format]
             self.csv.write_row(row)
 
-    def keep_file(self, task, response, min_size=None, max_size=None):
+    def keep_file(self,
+                  task: Dict[str, Any],
+                  response: Response,
+                  min_size=None, max_size=None):
         """Decide whether to keep the image & add hash
         Compare image size with ``min_size`` and ``max_size`` to decide.
 
@@ -106,7 +121,9 @@ class SaveResultImageDownloader(ImageDownloader):
             return False
         return True
 
-    def get_filename(self, task, default_ext):
+    def get_filename(self,
+                     task: Dict[str, Any],
+                     default_ext: str):
         url_path = urlparse(task['file_url'])[2]
         if '.' in url_path:
             extension = url_path.split('.')[-1]
@@ -118,10 +135,10 @@ class SaveResultImageDownloader(ImageDownloader):
         return '{:06d}.{}'.format(file_idx, extension)
 
     def worker_exec(self,
-                    max_num,
-                    default_ext='jpg',
-                    queue_timeout=5,
-                    req_timeout=5,
+                    max_num: int,
+                    default_ext: str = 'jpg',
+                    queue_timeout: int = 5,
+                    req_timeout: int = 5,
                     **kwargs):
         default_req_timeout: int = 1
         default_queue_timeout: int = 1
@@ -131,7 +148,7 @@ class SaveResultImageDownloader(ImageDownloader):
 
 
 class FixedGoogleParser(GoogleParser):
-    def parse(self, response):
+    def parse(self, response: Response):
         soup = BeautifulSoup(
             response.content.decode('utf-8', 'ignore'), 'lxml')
         image_divs = soup.find_all('script')

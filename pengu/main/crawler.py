@@ -5,7 +5,7 @@ from typing import List
 
 from icrawler.builtin import GoogleImageCrawler
 
-from pengu.crawler import FixedGoogleParser, SaveUrlNotDownloadDownloader
+from pengu.data.crawler import FixedGoogleParser, UrlCSVWriter
 from pengu.core.csv_core import ImageUrlCSV
 from pengu.utils.file_io import YamlConfig
 
@@ -53,7 +53,7 @@ def main():
             feeder_threads=args.feeder_threads,
             parser_threads=args.parser_threads,
             downloader_threads=args.downloader_threads,
-            downloader_cls=SaveUrlNotDownloadDownloader,
+            downloader_cls=UrlCSVWriter,
             parser_cls=FixedGoogleParser,
             extra_downloader_args={"csv_path": args.output_result_csv,
                                    "label": label}
