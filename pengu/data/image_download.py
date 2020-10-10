@@ -106,7 +106,7 @@ class ImageDownloadThread(threading.Thread):
                 continue
 
             (img_w, img_h), img_mode, img_hash, img_format \
-                = get_image_meta(img, data_format="pil", hash_method="phash")
+                = get_image_meta(img, hash_method="phash")
             resized_img = resize_image(img, size=self.resize_max_size, preserve_aspect_ratio=True)
             if resized_img.mode != "RGB":
                 resized_img = resized_img.convert("RGB")

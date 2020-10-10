@@ -94,7 +94,7 @@ class SaveResultImageDownloader(ImageDownloader):
         except (IOError, OSError):
             return False
         img_size, img_mode, img_hash, img_format \
-            = get_image_meta(img, data_format="pil", hash_method="phash")
+            = get_image_meta(img, hash_method="phash")
         task["img_size"] = img_size
         task["img_mode"] = img_mode
         task["img_hash"] = img_hash
