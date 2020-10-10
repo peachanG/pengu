@@ -154,6 +154,9 @@ class ImageDownloader:
         self._url_queue: Queue[ImageDownloadThread.UrlItem] = Queue()
         self._result_queue: Queue[ImageDataRowItem] = Queue()
 
+        # https://stackoverflow.com/questions/36741004/how-to-disable-urllib3-retrying-warning-messages
+        logging.getLogger("urllib3").setLevel(logging.ERROR)
+
     def _init_workers(self):
         self._workers = []
         for i in range(self._n_workers):
