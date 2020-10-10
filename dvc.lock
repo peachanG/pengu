@@ -2,7 +2,7 @@ crawler:
   cmd: python pengu/main/crawler.py -csv data/crawler/url.csv
   deps:
   - path: pengu/main/crawler.py
-    md5: 72eb6b8cc6c8bd2e1cc8cd25c8003080
+    md5: 603e5883a790646566b315f85af0a7c1
   params:
     params.yaml:
       crawler.end_date:
@@ -26,13 +26,13 @@ crawler:
       - 1
   outs:
   - path: data/crawler/url.csv
-    md5: e48f8fdeadc2e859690ba4144bda70f2
+    md5: bb27f1c5bc4b4c46b1996104d76c4424
 download:
   cmd: python pengu/main/download.py -url_csv data/crawler/url.csv -img_csv data/download/img_data.csv
     -img_dir data/download/images
   deps:
   - path: data/crawler/url.csv
-    md5: e48f8fdeadc2e859690ba4144bda70f2
+    md5: bb27f1c5bc4b4c46b1996104d76c4424
   - path: pengu/main/download.py
     md5: 162dec0a46ca2160f0cfb163c723f8cc
   params:
@@ -42,18 +42,18 @@ download:
       - 600
   outs:
   - path: data/download/images
-    md5: 4680e86f78c81ecee4b7cce2a2fa8df4.dir
+    md5: 185b998215329233948a7d05e7c7a5bc.dir
   - path: data/download/img_data.csv
-    md5: c6080e9f2014bbdb75e12e3318cf352f
+    md5: 015790e634e234660db014765d1ff68a
 make_clf_dataset:
   cmd: python pengu/main/make_clf_dataset.py -img_csv data/download/img_data.csv -p_csv
     data/make_clf_dataset/processed_csv -tfrecord data/make_clf_dataset/tfrecord -l2i
     data/make_clf_dataset/label2index.yaml
   deps:
   - path: data/download/images
-    md5: 4680e86f78c81ecee4b7cce2a2fa8df4.dir
+    md5: 185b998215329233948a7d05e7c7a5bc.dir
   - path: data/download/img_data.csv
-    md5: c6080e9f2014bbdb75e12e3318cf352f
+    md5: 015790e634e234660db014765d1ff68a
   - path: pengu/main/download.py
     md5: 162dec0a46ca2160f0cfb163c723f8cc
   params:
@@ -63,13 +63,14 @@ make_clf_dataset:
       - 0.7
       - 0.15
       - 0.15
+      make_clf_dataset.use_random_under_sampling: true
   outs:
   - path: data/make_clf_dataset/label2index.yaml
     md5: ddba730d28a85b7c65af74536527fb29
   - path: data/make_clf_dataset/processed_csv
-    md5: 1c394d3c93dd0fe89a092d7f468784a3.dir
+    md5: c406fda66c357860556605150def39da.dir
   - path: data/make_clf_dataset/tfrecord
-    md5: 31e85016fb9fb9ec88824a897e016b16.dir
+    md5: a62e66f3d0b57e43dfb1a1ac0d97bf29.dir
 train_clf:
   cmd: python pengu/main/train_clf.py -tfrecord data/make_clf_dataset/tfrecord -l2i
     data/make_clf_dataset/label2index.yaml -model data/train_clf/clf_model -t logs/clf_model
@@ -77,7 +78,7 @@ train_clf:
   - path: data/make_clf_dataset/label2index.yaml
     md5: ddba730d28a85b7c65af74536527fb29
   - path: data/make_clf_dataset/tfrecord
-    md5: 31e85016fb9fb9ec88824a897e016b16.dir
+    md5: a62e66f3d0b57e43dfb1a1ac0d97bf29.dir
   - path: pengu/main/train_clf.py
     md5: 163062c995c1794f77fcd2b5683c87cc
   params:
@@ -95,6 +96,6 @@ train_clf:
       train_clf.preprocess.rescale_scale: 1./127.5
   outs:
   - path: data/train_clf/clf_model
-    md5: afc2a821641198b5e5374b5d5ef4a70b.dir
+    md5: 1b02222aeba1fc8a8f4d3e4e587b2e09.dir
   - path: logs/clf_model
-    md5: 97f4fe41d8b73908c8d73bf747a1b631.dir
+    md5: 8b290812e344f72064f8993fff48aa9f.dir
